@@ -32,11 +32,7 @@ class DatabaseSeeder extends Seeder
 
         $tenant->users()->attach($user);
 
-        $this->call([
-            MasterDataSeeder::class,
-            SettingSeeder::class,
-        ]);
-
+        // Create ProductAttributes before ProductSeeder
         ProductAttribute::create([
             'name'=>'color',
             'shop_id'=>$tenant->id,
@@ -46,6 +42,12 @@ class DatabaseSeeder extends Seeder
             'name'=>'size',
             'shop_id'=>$tenant->id,
             'master_data'=>['S','M','L','XL','XXL']
+        ]);
+
+        $this->call([
+            MasterDataSeeder::class,
+            SettingSeeder::class,
+            ProductSeeder::class
         ]);
     }
 }

@@ -16,6 +16,8 @@ class Product extends Model
         'shop_id',
         'category_id',
         'stock',
+        'image',
+        'description',
         'user_id',
     ];
 
@@ -48,6 +50,10 @@ class Product extends Model
 
     public function attributes() {
         return $this->hasManyThrough(ProductVariantAttribute::class, ProductVariant::class);
+    }
+
+    public function images() {
+        return $this->hasManyThrough(ProductVariantImage::class, ProductVariant::class);
     }
 
 

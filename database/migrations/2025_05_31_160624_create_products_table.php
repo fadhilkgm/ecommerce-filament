@@ -22,6 +22,8 @@ return new class extends Migration
             $table->string('name');
             $table->string('price');
             $table->string('cost_price')->nullable();
+            $table->text('description')->nullable();
+            $table->string('image')->nullable();
             $table->integer('stock')->nullable();
             $table->timestamps();
         });

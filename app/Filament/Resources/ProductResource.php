@@ -7,21 +7,24 @@ use App\Filament\Resources\ProductResource\RelationManagers;
 use App\Models\Category;
 use App\Models\Product;
 use App\Models\ProductAttribute;
-use Filament\Facades\Filament;
 use App\Models\Setting;
+use Filament\Facades\Filament;
 use Filament\Forms\Components\Actions\Action;
+use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\Grid;
+use Filament\Forms\Components\MarkdownEditor;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Form;
+use Filament\Forms\Get;
 use Filament\Resources\Resource;
+use Filament\Support\Enums\Alignment;
 use Filament\Tables\Enums\FiltersLayout;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Filament\Forms;
-use Filament\Forms\Components\Grid;
-use Filament\Support\Enums\Alignment;
 use Filament\Tables;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
@@ -37,7 +40,97 @@ class ProductResource extends Resource
     {
         return $form
             ->schema([
-                Grid::make(2)->schema([
+                Grid::make(3)->schema([
+                    Section::make()->schema([
+                        Repeater::make('variants')
+                            ->label('Product Variants')
+                            ->relationship('variants')
+                            ->schema([
+                                TextInput::make('stock')
+                                    ->label('Stock')
+                                    ->numeric()
+                                    ->required(),
+                                TextInput::make('price')
+                                    ->label('Price')
+                                    ->numeric()
+                                    ->required(),
+                                Repeater::make('variantAttributes')
+                                    ->label('Product Variations')
+                                    ->relationship('attributes')
+                                    ->schema([
+                                        Select::make('product_attribute_id')
+                                            ->label('Property')
+                                            ->options(ProductAttribute::all()->pluck('name', 'id'))
+                                            ->required()
+                                            ->default(function ($get) {
+                                                // Define the preferred order of attributes
+                                                $preferredOrder = ProductAttribute::pluck('name');  // Adjust these names to match your database
+
+                                                // Get all repeater items
+                                                $repeaterItems = $get('../../variantAttributes') ?? [];
+                                                $currentIndex = count($repeaterItems);
+
+                                                // Get already selected attributes
+                                                $selectedAttributes = collect($repeaterItems)
+                                                    ->pluck('product_attribute_id')
+                                                    ->filter()
+                                                    ->toArray();
+
+                                                // Try to assign based on preferred order
+                                                foreach ($preferredOrder as $attributeName) {
+                                                    $attribute = ProductAttribute::where('name', $attributeName)->first();
+                                                    if ($attribute && !in_array($attribute->id, $selectedAttributes)) {
+                                                        return $attribute->id;
+                                                    }
+                                                }
+
+                                                // Fallback to any available attribute
+                                                $availableAttribute = ProductAttribute::whereNotIn('id', $selectedAttributes)->first();
+                                                return $availableAttribute?->id;
+                                            })
+                                            ->reactive()
+                                            ->disableOptionsWhenSelectedInSiblingRepeaterItems()
+                                            ->afterStateUpdated(fn(callable $set) => $set('attribute_value_id', null))
+                                            ->columnSpan(1),
+                                        Select::make('value')
+                                            ->label(fn(Get $get) => ProductAttribute::find($get('product_attribute_id'))->name ?? 'Attribute Value')
+                                            ->required()
+                                            ->options(fn(callable $get) => self::makeValuesOption($get('product_attribute_id')))
+                                            ->columnSpan(1),
+                                    ])
+                                    ->addActionLabel('Add Attribute')
+                                    ->columns(2)
+                                    ->minItems(1)
+                                    ->defaultItems(ProductAttribute::count())
+                                    ->addActionAlignment(Alignment::End)
+                                    ->maxItems(3)
+                                    ->columnSpanFull(),
+                                // images
+                                Repeater::make('productImages')
+                                    ->relationship('images')
+                                    ->schema([
+                                        TextInput::make('name')->label('Name'),
+                                        TextInput::make('alt')->label('Alt'),
+                                        FileUpload::make('images')
+                                            ->preserveFilenames()
+                                            ->directory('product-images')
+                                            ->multiple()
+                                            ->reorderable()
+                                            ->columnSpanFull(),
+                                    ])
+                                    ->columns(2)
+                                    ->columnSpanFull(),
+                            ])
+                            ->columns(2)
+                            ->addActionLabel('Add Variant')
+                            ->mutateRelationshipDataBeforeCreateUsing(function (array $data, Product $product): array {
+                                $data['sku'] = Str::slug($product->name) . '-' . random_int(1000, 9999);
+                                return $data;
+                            }),
+                    ])->columnSpan(2)->visible(function () {
+                        $setting = Setting::where('code', 'PRODUCT_PROPERTY')->first();
+                        return $setting->value ? true : false;
+                    }),
                     Section::make('General Information')->schema([
                         Select::make('category_id')
                             ->label('Category')
@@ -107,86 +200,10 @@ class ProductResource extends Resource
                                 $setting = Setting::where('code', 'PRODUCT_PROPERTY')->first();
                                 return $setting ? !filter_var($setting->value, FILTER_VALIDATE_BOOLEAN) : true;
                             }),
+                        FileUpload::make('image')->directory('product-primary-images')->columnSpanFull(),
+                        MarkdownEditor::make('description')->columnSpanFull(),
                     ])->columns(2)->columnSpan(1),
-                    Section::make()->schema([
-                        Repeater::make('variants')
-                            ->label('Product Variants')
-                            ->relationship('variants')
-                            ->schema([
-                                TextInput::make('stock')
-                                    ->label('Stock')
-                                    ->numeric()
-                                    ->required(),
-                                TextInput::make('price')
-                                    ->label('Price')
-                                    ->numeric()
-                                    ->required(),
-                                    Repeater::make('variantAttributes')
-                                    ->label('Product Variations')
-                                    ->relationship('attributes')
-                                    ->schema([
-                                        Select::make('product_attribute_id')
-                                            ->label('Attribute')
-                                            ->options(ProductAttribute::all()->pluck('name', 'id'))
-                                            ->required()
-                                            ->default(function ($get) {
-                                                // Define the preferred order of attributes
-                                                $preferredOrder = ProductAttribute::pluck('name'); // Adjust these names to match your database
-
-                                                // Get all repeater items
-                                                $repeaterItems = $get('../../variantAttributes') ?? [];
-                                                $currentIndex = count($repeaterItems);
-
-                                                // Get already selected attributes
-                                                $selectedAttributes = collect($repeaterItems)
-                                                    ->pluck('product_attribute_id')
-                                                    ->filter()
-                                                    ->toArray();
-
-                                                // Try to assign based on preferred order
-                                                foreach ($preferredOrder as $attributeName) {
-                                                    $attribute = ProductAttribute::where('name', $attributeName)->first();
-                                                    if ($attribute && !in_array($attribute->id, $selectedAttributes)) {
-                                                        return $attribute->id;
-                                                    }
-                                                }
-
-                                                // Fallback to any available attribute
-                                                $availableAttribute = ProductAttribute::whereNotIn('id', $selectedAttributes)->first();
-                                                return $availableAttribute?->id;
-                                            })
-                                            ->reactive()
-                                            ->disableOptionsWhenSelectedInSiblingRepeaterItems()
-                                            ->afterStateUpdated(fn(callable $set) => $set('attribute_value_id', null))
-                                            ->columnSpan(1),
-                                        Select::make('value')
-                                            ->label('Attribute Value')
-                                            ->required()
-                                            ->options(fn(callable $get) => self::makeValuesOption($get('product_attribute_id')))
-                                            ->columnSpan(1),
-                                    ])
-                                    ->addActionLabel('Add Attribute')
-                                    ->columns(2)
-                                    ->minItems(1)
-                                    ->defaultItems(ProductAttribute::count())
-                                    ->addActionAlignment(Alignment::End)
-                                    ->maxItems(3)
-                                    ->columnSpanFull()
-                            ])
-                            ->columns(2)
-                            ->addActionLabel('Add Variant')
-                            ->mutateRelationshipDataBeforeCreateUsing(function (array $data, Product $product): array {
-                                $data['sku'] = Str::slug($product->name) . '-' . random_int(1000, 9999);
-                                return $data;
-                            })
-                            ->visible(function () {
-                                $setting = Setting::where('code', 'PRODUCT_PROPERTY')->first();
-                                return $setting ? filter_var($setting->value, FILTER_VALIDATE_BOOLEAN) : false;
-                            })
-                           ,
-                    ])->columnSpan(1),
-                ])->columns(2),
-
+                ])->columns(3),
             ]);
     }
 

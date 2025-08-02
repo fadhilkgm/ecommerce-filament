@@ -24,6 +24,10 @@ class ProductVariant extends Model
         return $this->hasMany(ProductVariantAttribute::class);
     }
 
+    public function images(){
+       return $this->hasMany(ProductVariantImage::class);
+    }
+
     protected static function boot()
     {
         parent::boot();
