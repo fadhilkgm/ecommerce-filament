@@ -20,13 +20,13 @@ class DatabaseSeeder extends Seeder
         $user = User::create([
             'name' => 'Super Admin',
             'email' => 'superadmin@gmail.com',
-            'is_admin'=>true,
+            'is_admin' => true,
             'password' => bcrypt('superadmin12345'),
         ]);
         $tenant = Shop::create([
             'name' => 'yaal',
             'slug' => 'yaal',
-            'location'=> 'KKD',
+            'location' => 'KKD',
             'phone' => '+919605146562',
         ]);
 
@@ -34,14 +34,14 @@ class DatabaseSeeder extends Seeder
 
         // Create ProductAttributes before ProductSeeder
         ProductAttribute::create([
-            'name'=>'color',
-            'shop_id'=>$tenant->id,
-            'master_data'=>['red','blue','green','white','black']
+            'name' => 'color',
+            'shop_id' => $tenant->id,
+            'master_data' => ['red', 'blue', 'green', 'white', 'black']
         ]);
         ProductAttribute::create([
-            'name'=>'size',
-            'shop_id'=>$tenant->id,
-            'master_data'=>['S','M','L','XL','XXL']
+            'name' => 'size',
+            'shop_id' => $tenant->id,
+            'master_data' => ['S', 'M', 'L', 'XL', 'XXL']
         ]);
 
         $this->call([
