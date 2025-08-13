@@ -1,12 +1,14 @@
 <?php
 
+use App\Http\Controllers\Api\V1\AddressController;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\CartController;
 use App\Http\Controllers\Api\V1\CategoryController;
-use App\Http\Controllers\Api\V1\ProductController;
-use App\Http\Controllers\Api\V1\AddressController;
 use App\Http\Controllers\Api\V1\CheckoutController;
 use App\Http\Controllers\Api\V1\OrderController;
+use App\Http\Controllers\Api\V1\ProductController;
+use App\Http\Controllers\Api\V1\TenantController;
+use App\Http\Controllers\Api\ContentController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -21,6 +23,13 @@ Route::prefix('v1')->group(function () {
 
     Route::get('/categories', [CategoryController::class, 'index']);
     Route::get('/categories/{id}', [CategoryController::class, 'show']);
+
+    // Tenant configuration routes
+    Route::get('/tenant/config', [TenantController::class, 'getConfig']);
+    Route::get('/tenant/public-settings', [TenantController::class, 'getPublicSettings']);
+
+    // Public order details route (for QR code - no authentication required)
+    // Route::get('/order/{orderNumber}', [OrderController::class, 'showByNumber'])->name('order.details');
 
     // Test endpoint for debugging
     Route::get('/test', function () {
@@ -37,18 +46,18 @@ Route::prefix('v1')->group(function () {
     Route::middleware('auth:sanctum')->group(function () {
         Route::post('/auth/logout', [AuthController::class, 'logout']);
         Route::get('/auth/me', [AuthController::class, 'me']);
-        
+
         // Address management routes
         Route::get('/addresses', [AddressController::class, 'index']);
         Route::post('/addresses', [AddressController::class, 'store']);
         Route::put('/addresses/{id}', [AddressController::class, 'update']);
         Route::delete('/addresses/{id}', [AddressController::class, 'destroy']);
         Route::post('/addresses/{id}/set-default', [AddressController::class, 'setDefault']);
-        
+
         // Checkout routes
         Route::get('/checkout', [CheckoutController::class, 'index']);
         Route::post('/checkout/process', [CheckoutController::class, 'processCheckout']);
-        
+
         // Order management routes
         Route::get('/orders', [OrderController::class, 'index']);
         Route::get('/orders/{orderNumber}', [OrderController::class, 'show']);
@@ -60,4 +69,12 @@ Route::prefix('v1')->group(function () {
     Route::put('/cart/items/{itemId}', [CartController::class, 'updateItem']);
     Route::delete('/cart/items/{itemId}', [CartController::class, 'removeItem']);
     Route::delete('/cart/clear', [CartController::class, 'clear']);
+
+    // Banner routes - public access
+    Route::get('/banners', [\App\Http\Controllers\Api\V1\BannerController::class, 'index']);
+    
+    // Content Management routes - public access
+    Route::get('/content/banners', [ContentController::class, 'getBannerImages']);
+    Route::get('/content/{code}', [ContentController::class, 'getContentByCode']);
+    Route::get('/content', [ContentController::class, 'getAllContent']);
 });

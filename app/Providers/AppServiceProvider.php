@@ -2,11 +2,14 @@
 
 namespace App\Providers;
 
-use App\Models\User;
+use App\Models\Order;
 use App\Models\Permission;
+use App\Models\User;
+use App\Observers\OrderObserver;
 use App\Scopes\ShopScope;
-use Illuminate\Support\Facades\Schema;
+use Filament\Tables\Actions\Action;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -24,6 +27,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot()
     {
+        // Register model observers
+        Order::observe(OrderObserver::class);
 
         // Get all models that extend Illuminate\Database\Eloquent\Model
         $models = $this->getApplicationModels();
@@ -39,6 +44,10 @@ class AppServiceProvider extends ServiceProvider
                 $model::addGlobalScope(new ShopScope);
             }
         }
+
+        Action::configureUsing(function (Action $action) {
+            $action->iconButton();
+        });
     }
 
     protected function getApplicationModels()

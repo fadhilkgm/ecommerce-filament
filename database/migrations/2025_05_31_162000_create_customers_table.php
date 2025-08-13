@@ -17,7 +17,6 @@ return new class extends Migration
             $table->string('name');
             $table->string('email')->nullable();
             $table->string('phone');
-            $table->string('address')->nullable();
             $table->decimal('balance', 15, 3)->default(0)->nullable();
             $table->string('payment_type')->default('to_pay');
             $table->foreignIdFor(Shop::class)->constrained()->cascadeOnDelete();

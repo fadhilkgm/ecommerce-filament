@@ -6,9 +6,12 @@ use App\Http\Controllers\Controller;
 use App\Models\Cart;
 use App\Models\Order;
 use App\Models\CustomerAddress;
+use App\Models\CompanySetting;
+use App\Mail\OrderConfirmation;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Validator;
 
 class CheckoutController extends Controller
@@ -56,8 +59,13 @@ class CheckoutController extends Controller
 
             // Calculate totals
             $subtotal = $cart->total_amount;
-            $taxRate = 0.08; // 8% tax rate (can be configurable)
+            $shopId = $request->get('shop_id', 1);
+            
+            // Get tax settings from database
+            $taxEnabled = CompanySetting::getValue('TAX_ENABLED', false, $shopId);
+            $taxRate = $taxEnabled ? CompanySetting::getValue('tax_rate', 0.08, $shopId) : 0;
             $taxAmount = $subtotal * $taxRate;
+            
             $shippingAmount = $subtotal >= 100 ? 0 : 15; // Free shipping over $100
             $total = $subtotal + $taxAmount + $shippingAmount;
 
@@ -133,7 +141,8 @@ class CheckoutController extends Controller
             $validator = Validator::make($request->all(), [
                 'shipping_address_id' => 'required|exists:customer_addresses,id',
                 'billing_address_id' => 'required|exists:customer_addresses,id',
-                'payment_method' => 'required|string|in:credit_card,paypal,bank_transfer',
+                'payment_method' => 'required|string|in:credit_card,paypal,bank_transfer,manual_payment',
+                'payment_reference' => 'required_if:payment_method,manual_payment|nullable|string|max:255',
                 'notes' => 'nullable|string|max:500',
                 'shop_id' => 'required|exists:shops,id',
             ]);
@@ -165,8 +174,12 @@ class CheckoutController extends Controller
 
             // Calculate totals
             $subtotal = $cart->total_amount;
-            $taxRate = 0.08;
+            
+            // Get tax settings from database
+            $taxEnabled = CompanySetting::getValue('TAX_ENABLED', false, $request->shop_id);
+            $taxRate = $taxEnabled ? CompanySetting::getValue('tax_rate', 0.08, $request->shop_id) : 0;
             $taxAmount = $subtotal * $taxRate;
+            
             $shippingAmount = $subtotal >= 100 ? 0 : 15;
             $total = $subtotal + $taxAmount + $shippingAmount;
 
@@ -188,6 +201,7 @@ class CheckoutController extends Controller
                     'shipping_amount' => $shippingAmount,
                     'total_amount' => $total,
                     'payment_method' => $request->payment_method,
+                    'payment_reference' => $request->payment_reference,
                     'notes' => $request->notes,
                     'status' => 'pending',
                     'payment_status' => 'pending',
@@ -218,6 +232,20 @@ class CheckoutController extends Controller
                 $cart->clear();
 
                 DB::commit();
+
+                // Send order confirmation email
+                try {
+                    // Load order with items for email
+                    $order->load('items');
+                    Mail::to($customer->email)->send(new OrderConfirmation($order));
+                } catch (\Exception $emailError) {
+                    // Log email error but don't fail the order
+                    \Log::error('Failed to send order confirmation email', [
+                        'order_id' => $order->id,
+                        'customer_email' => $customer->email,
+                        'error' => $emailError->getMessage()
+                    ]);
+                }
 
                 return response()->json([
                     'success' => true,

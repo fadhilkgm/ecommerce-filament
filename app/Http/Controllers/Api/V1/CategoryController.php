@@ -72,6 +72,7 @@ class CategoryController extends Controller
         return [
             'id' => $category->id,
             'name' => $category->name,
+            'parent_id'=> $category->parent_id,
             'description' => $category->description,
             'image' => $this->generateImageUrl($category->image),
             'shop_id' => $category->shop_id,

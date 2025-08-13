@@ -19,9 +19,11 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 class PurchaseResource extends Resource
 {
     protected static ?string $model = Purchase::class;
-    protected static ?string $navigationIcon = 'heroicon-o-shopping-bag';
+    // protected static ?string $navigationIcon = 'heroicon-o-shopping-bag';
     protected static ?string $navigationLabel = 'Purchases';
-    protected static ?int $navigationSort = -99;
+    protected static ?string $navigationGroup = 'Purchases';
+
+    protected static ?int $navigationSort = 4;
 
     public static function form(Form $form): Form
     {

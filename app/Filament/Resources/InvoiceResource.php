@@ -18,9 +18,11 @@ class InvoiceResource extends Resource
 {
     protected static ?string $model = Invoice::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-document';
+    // protected static ?string $navigationIcon = 'heroicon-o-document';
     
-    protected static ?int $navigationSort = -100;
+    protected static ?int $navigationSort = 3;
+
+    protected static ?string $navigationGroup = 'Finance';
 
     public static function form(Form $form): Form
     {

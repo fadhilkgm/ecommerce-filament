@@ -34,7 +34,7 @@ class ProductResource extends Resource
 {
     protected static ?string $model = Product::class;
     protected static ?string $navigationGroup = 'Products';
-    protected static ?int $navigationSort = -96;
+    protected static ?int $navigationSort = 2;
 
     public static function form(Form $form): Form
     {

@@ -23,7 +23,6 @@ class AuthController extends Controller
             'email' => 'required|string|email|max:255|unique:customers',
             'password' => 'required|string|min:8|confirmed',
             'phone' => 'nullable|string|max:20',
-            'address' => 'nullable|string|max:500',
             'shop_id' => 'required|exists:shops,id',
         ]);
 
@@ -41,7 +40,6 @@ class AuthController extends Controller
                 'email' => $request->email,
                 'password' => Hash::make($request->password),
                 'phone' => $request->phone ?: null,
-                'address' => $request->address ?: null,
                 'shop_id' => $request->shop_id,
                 'email_verified_at' => now(), // Auto-verify for now, can be changed later
             ]);

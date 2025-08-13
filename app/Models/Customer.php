@@ -18,7 +18,6 @@ class Customer extends Authenticatable
         'email',
         'password',
         'phone',
-        'address',
         'balance',
         'payment_type',
         'shop_id',

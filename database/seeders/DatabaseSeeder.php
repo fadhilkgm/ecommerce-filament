@@ -24,10 +24,10 @@ class DatabaseSeeder extends Seeder
             'password' => bcrypt('superadmin12345'),
         ]);
         $tenant = Shop::create([
-            'name' => 'SAGEY',
-            'slug' => 'SAGEY',
+            'name' => 'yaal',
+            'slug' => 'yaal',
             'location'=> 'KKD',
-            'phone' => '1234567890',
+            'phone' => '+919605146562',
         ]);
 
         $tenant->users()->attach($user);
@@ -47,7 +47,7 @@ class DatabaseSeeder extends Seeder
         $this->call([
             MasterDataSeeder::class,
             SettingSeeder::class,
-            ProductSeeder::class
+            CompanySettingsSeeder::class
         ]);
     }
 }

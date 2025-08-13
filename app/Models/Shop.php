@@ -77,4 +77,12 @@ class Shop extends Model
     {
         return $this->hasMany(Customer::class);
     }
+
+    public function banners(){
+        return $this->hasMany(Banner::class);
+    }
+
+    public function companySettings(){
+        return $this->hasMany(CompanySetting::class);
+    }
 }

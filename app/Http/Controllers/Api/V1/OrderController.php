@@ -162,4 +162,35 @@ class OrderController extends Controller
             'delivered_at' => $order->delivered_at?->toISOString(),
         ];
     }
+
+    /**
+     * Get order details by order number (public endpoint for QR codes)
+     */
+    public function showByNumber(Request $request, $orderNumber): JsonResponse
+    {
+        try {
+            $order = Order::with(['items.product', 'items.variant'])
+                ->where('order_number', $orderNumber)
+                ->first();
+
+            if (!$order) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Order not found'
+                ], 404);
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => $this->transformOrderDetails($order)
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch order details',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
 }
