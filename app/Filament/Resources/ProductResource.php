@@ -116,6 +116,7 @@ class ProductResource extends Resource
                                             ->directory('product-images')
                                             ->multiple()
                                             ->reorderable()
+                                            ->maxSize(5000)
                                             ->columnSpanFull(),
                                     ])
                                     ->columns(2)
@@ -200,7 +201,7 @@ class ProductResource extends Resource
                                 $setting = Setting::where('code', 'PRODUCT_PROPERTY')->first();
                                 return $setting ? !filter_var($setting->value, FILTER_VALIDATE_BOOLEAN) : true;
                             }),
-                        FileUpload::make('image')->directory('product-primary-images')->columnSpanFull(),
+                        FileUpload::make('image')->directory('product-primary-images')->columnSpanFull()->maxSize(5000),
                         MarkdownEditor::make('description')->columnSpanFull(),
                     ])->columns(2)->columnSpan(1),
                 ])->columns(3),
